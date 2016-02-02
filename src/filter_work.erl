@@ -25,7 +25,7 @@ start_link(MgrRef, Words)->
   gen_server:start_link(?MODULE, [MgrRef, Words], []).
 
 init([MgrRef, Words])->
-  gen_server:call(MgrRef, {add, self()}),
+  gen_server:cast(MgrRef, {add, self()}),
   {ok, #work{ manager_ref = MgrRef, words = Words} }.
 
 
@@ -33,9 +33,9 @@ handle_cast(_Msg, State)->
   {noreply, State}.
 
 handle_call({test, Str}, _Form, State)->
-  {reply, test(Str, State, State), State};
+  {reply, test(Str, State#work.words), State};
 handle_call({filter, Str}, _Form, State)->
-  {reply,filter(Str, State, State), State};
+  {reply, filter(Str, State#work.words), State};
 handle_call(_Msg, _Form, State)->
   {reply, ok, State}.
 
@@ -69,9 +69,9 @@ is_contain(Map, [H|_T])->
 is_contain(Map, Key)->
   maps:is_key(Key, Map).
 
-filter(Bin, State, InitState) when is_binary(Bin) ->
+filter(Bin, State) when is_binary(Bin) ->
   L = utf8_convert_utf16:utf8_convert_utf16(Bin),
-  filter(L, State, 0, [], InitState).
+  filter(L, State, 0, [], State).
 
 filter([], _, _, Acc, _InitState)->
   unicode:characters_to_binary(lists:reverse(Acc));
@@ -108,9 +108,9 @@ filter([H|T] ,State,I,Acc, InitState)->
   end.
 
 
-test(Bin,State, InitState) when is_binary(Bin) ->
+test(Bin, State) when is_binary(Bin) ->
   L = utf8_convert_utf16:utf8_convert_utf16(Bin),
-  test(L,State, InitState);
+  test(L, State, State).
 test([],_, _)->
   true;
 test([H|T] = L, State, InitState)->

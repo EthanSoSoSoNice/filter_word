@@ -35,43 +35,35 @@ init([PoolSize,  WordTextPath])->
   State = compile(WordTextPath),
   %% todo open work
   start_works(PoolSize,  State),
-  {noreply,   #pool{ state = State}}.
+  {ok,   #pool{ state = State, work_queue = queue:new()}}.
 
 -spec filter(Ref,  Utf8TextBinary)-> Utf16TextBinary
-when Utf8TextBinary :: binary(),  %% encode utf8
+when 
+	  Ref :: any(),
+	  Utf8TextBinary :: binary(),  %% encode utf8
       Utf16TextBinary :: binary(). %% encode utf16
 
 filter(Ref,  Text)
   when is_binary(Text)->
-  case whereis(Ref) of
-    undefined->
-      {error,  invalid_ref};
-    _->
-      WorkPid = take_work(Ref),
-      gen_server:call(WorkPid,  {filter,  Text})
-  end.
+  WorkPid = take_work(Ref),
+  gen_server:call(WorkPid,  {filter,  Text}).
 
 test(Ref,  Text)
   when is_binary(Text)->
-  case whereis(Ref) of
-    undefined->
-      {error,  invalid_ref};
-    _->
-      WorkPid = take_work(Ref),
-      gen_server:call(WorkPid,  {test,  Text})
-  end.
+  WorkPid = take_work(Ref),
+  gen_server:call(WorkPid,  {test,  Text}).
 
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-handle_call({add,  Work},  _Form,  #pool{ work_queue = Works } = Pool)->
-  {reply,  Pool#pool.state,  Pool#pool{ work_queue = queue:in(Work,  Works)}};
 handle_call(take,  _Form,  #pool{ work_queue = Works} = Pool ) ->
   {{value,  Work},  Works2} = queue:out(Works),
   {reply,  Work,  Pool#pool{work_queue = queue:in(Work,  Works2)}}.
 
+handle_cast({add,  Work}, #pool{ work_queue = Works } = Pool)->
+  {noreply, Pool#pool{ work_queue = queue:in(Work,  Works)}};
 handle_cast(_Msg,  State)->
   {noreply,  State}.
 
@@ -90,7 +82,7 @@ start_works(Size,  Words)->
   [filter_work:start_link(self(),  Words) || _ <- lists:seq(1,  Size)].
 
 take_work(Ref)->
-  gen_server:call(Ref,  take).
+  gen_server:call(Ref, take).
 
 compile(FileName)->
   case catch get_file_io(FileName)  of

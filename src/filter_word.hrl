@@ -10,7 +10,7 @@
 -record(work,
 {
   words :: map(),
-  manager_ref :: ref()
+  manager_ref 
 }).
 
 -endif.
