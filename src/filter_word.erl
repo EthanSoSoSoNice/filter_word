@@ -38,11 +38,11 @@ init([PoolSize,  WordTextPath])->
   start_works(PoolSize,  State),
   {ok,   #pool{ state = State, work_queue = queue:new()}}.
 
--spec filter(Ref,  Utf8TextBinary)-> Utf16TextBinary
+-spec filter(Ref,  Text)-> FilteredText 
 when 
 	  Ref :: any(),
-	  Utf8TextBinary :: binary(),  %% encode utf8
-      Utf16TextBinary :: binary(). %% encode utf16
+	  Text :: binary(),  %% encode utf8
+    FilteredText :: binary(). %% encode utf8
 
 filter(Ref,  Text)
   when is_binary(Text)->
