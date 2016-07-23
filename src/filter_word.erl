@@ -14,7 +14,8 @@
 %% API
 -export([ start/3,
           filter/2,
-          test/2
+          test/2,
+          utf8_convert_utf16/1
 ]).
 
 

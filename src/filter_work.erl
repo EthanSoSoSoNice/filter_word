@@ -70,11 +70,11 @@ is_contain(Map, Key)->
   maps:is_key(Key, Map).
 
 filter(Bin, State) when is_binary(Bin) ->
-  L = utf8_convert_utf16:utf8_convert_utf16(Bin),
+  L = filter_word:utf8_convert_utf16(Bin),
   filter(L, State, 0, [], State).
 
 filter([], _, _, Acc, _InitState)->
-  unicode:characters_to_binary(lists:reverse(Acc));
+  unicode:characters_to_binary(lists:reverse(Acc), utf16);
 %%%  Prevent users input spaces in the sensitive word
 %%%
 %%%
@@ -109,7 +109,7 @@ filter([H|T] ,State,I,Acc, InitState)->
 
 
 test(Bin, State) when is_binary(Bin) ->
-  L = utf8_convert_utf16:utf8_convert_utf16(Bin),
+  L = filter_word:utf8_convert_utf16(Bin),
   test(L, State, State).
 test([],_, _)->
   true;
