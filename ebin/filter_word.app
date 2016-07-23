@@ -1,9 +1,0 @@
-{application,filter_word,
-             [{description,[]},
-              {vsn,"1"},
-              {registered,[]},
-              {applications,[kernel,stdlib]},
-              {mod,{filter_word_app,[]}},
-              {env,[]},
-              {modules,[filter_word,filter_word_app,filter_word_sup,
-                        filter_work,filter_works_sup]}]}.
