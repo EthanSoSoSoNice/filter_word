@@ -12,13 +12,13 @@
 
 
 %% API
--export([ start/3,
-          filter/2,
-          test/2,
-          utf8_convert_utf16/1
+-export([
+  start/3,
+  start_link/3,
+  filter/2,
+  test/2,
+  utf8_convert_utf16/1
 ]).
-
-
 
 -behaviour(gen_server).
 -export([init/1]).
@@ -28,14 +28,17 @@
 -export([code_change/3]).
 -export([terminate/2]).
 
-start(PoolRef,  Size,  WordTextPath)->
-  gen_server:start_link(PoolRef,  ?MODULE,  [Size,  WordTextPath],  []).
 
+start(PoolRef, Size, WordTextPath) ->
+  filter_word_sup:start_child(PoolRef, [Size, WordTextPath]).
+
+start_link(PoolRef, Size, WordTextPath)->
+  gen_server:start_link({local, PoolRef},  ?MODULE,  [Size, WordTextPath],  []).
 
 init([PoolSize,  WordTextPath])->
   State = compile(WordTextPath),
   %% todo open work
-  start_works(PoolSize,  State),
+  start_worker(PoolSize,  State),
   {ok,   #pool{ state = State, work_queue = queue:new()}}.
 
 -spec filter(Ref,  Text)-> FilteredText 
@@ -46,12 +49,12 @@ when
 
 filter(Ref,  Text)
   when is_binary(Text)->
-  WorkPid = take_work(Ref),
+  WorkPid = take_worker(Ref),
   gen_server:call(WorkPid,  {filter,  Text}).
 
 test(Ref,  Text)
   when is_binary(Text)->
-  WorkPid = take_work(Ref),
+  WorkPid = take_worker(Ref),
   gen_server:call(WorkPid,  {test,  Text}).
 
 
@@ -79,10 +82,10 @@ terminate(_Reason,  _State)->
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-start_works(Size,  Words)->
-  [filter_work:start_link(self(),  Words) || _ <- lists:seq(1,  Size)].
+start_worker(Size,  Words)->
+  [filter_worker_sup:start_child(self(),  Words) || _ <- lists:seq(1,  Size)].
 
-take_work(Ref)->
+take_worker(Ref)->
   gen_server:call(Ref, take).
 
 compile(FileName)->
