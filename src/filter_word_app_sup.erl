@@ -27,7 +27,6 @@ start_link() ->
 
 init(_) ->
   Childs = [
-    {filter_word_sup, {filter_word_sup, start_link, []}, permanent, 5000, worker, [filter_word_sup]},
-    {filter_worker_sup, {filter_worker_sup, start_link, []}, permanent, 5000, worker, [filter_worker_sup]}
+    {filter_word_sup, {filter_word_sup, start_link, []}, permanent, 5000, worker, [filter_word_sup]}
   ],
   {ok, { {one_for_one, 5, 10}, Childs} }.

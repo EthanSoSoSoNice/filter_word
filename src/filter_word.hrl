@@ -3,8 +3,8 @@
 
 -record(pool,
 {
-  work_queue :: queue:queue(),
-  state :: dict:dict()
+  worker_queue :: queue:queue(),
+  ttree :: dict:dict()
 }).
 
 -record(work,

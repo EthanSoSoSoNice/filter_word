@@ -36,10 +36,11 @@ start_link(PoolRef, Size, WordTextPath)->
   gen_server:start_link({local, PoolRef},  ?MODULE,  [Size, WordTextPath],  []).
 
 init([PoolSize,  WordTextPath])->
-  State = compile(WordTextPath),
+  process_flag(trap_exit, true),
+  TTree = compile(WordTextPath),
   %% todo open work
-  start_worker(PoolSize,  State),
-  {ok,   #pool{ state = State, work_queue = queue:new()}}.
+  start_worker(PoolSize,  TTree),
+  {ok,   #pool{ ttree = TTree, worker_queue = queue:new()}}.
 
 -spec filter(Ref,  Text)-> FilteredText 
 when 
@@ -62,15 +63,26 @@ test(Ref,  Text)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-handle_call(take,  _Form,  #pool{ work_queue = Works} = Pool ) ->
+handle_call(take,  _Form,  #pool{ worker_queue = Works} = Pool ) ->
   {{value,  Work},  Works2} = queue:out(Works),
-  {reply,  Work,  Pool#pool{work_queue = queue:in(Work,  Works2)}}.
+  {reply,  Work,  Pool#pool{worker_queue = queue:in(Work,  Works2)}}.
 
-handle_cast({add,  Work}, #pool{ work_queue = Works } = Pool)->
-  {noreply, Pool#pool{ work_queue = queue:in(Work,  Works)}};
+handle_cast({add,  Work}, #pool{ worker_queue = Works } = Pool)->
+  {noreply, Pool#pool{ worker_queue = queue:in(Work,  Works)}};
 handle_cast(_Msg,  State)->
   {noreply,  State}.
 
+handle_info({'EXIT', From, _}, State) ->
+  WorkerQueue = State#pool.worker_queue,
+  List = queue:to_list(WorkerQueue),
+  case lists:member(From,  List) of
+    false ->
+      {noreply, State};
+    true ->
+      Remain = lists:delete(From, List),
+      NewList = lists:append(Remain, start_worker(1, State#pool.ttree)),
+      {noreply, State#pool{ worker_queue = queue:from_list(NewList) }}
+  end;
 handle_info(_Msg,  State)->
   {noreply,  State}.
 
@@ -83,7 +95,13 @@ terminate(_Reason,  _State)->
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 start_worker(Size,  Words)->
-  [filter_worker_sup:start_child(self(),  Words) || _ <- lists:seq(1,  Size)].
+  lists:map(
+    fun(_) ->
+      {ok, P} = filter_worker:start_link(self(),  Words),
+      P
+    end,
+    lists:seq(1, Size)
+  ).
 
 take_worker(Ref)->
   gen_server:call(Ref, take).
