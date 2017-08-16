@@ -69,6 +69,7 @@ is_contain(Map, [H|_T])->
 is_contain(Map, Key)->
   maps:is_key(Key, Map).
 
+filter(L, State) when is_list(L) -> filter(L, State, 0, [], State);
 filter(Bin, State) when is_binary(Bin) ->
   L = filter_word:utf8_convert_utf16(Bin),
   filter(L, State, 0, [], State).
@@ -107,7 +108,7 @@ filter([H|T] ,State,I,Acc, InitState)->
       filter(T, InitState, 0, [H | Acc], InitState)
   end.
 
-
+test(L, State) when is_list(L) -> test(L, State, State);
 test(Bin, State) when is_binary(Bin) ->
   L = filter_word:utf8_convert_utf16(Bin),
   test(L, State, State).

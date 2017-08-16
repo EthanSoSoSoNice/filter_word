@@ -45,16 +45,14 @@ init([PoolSize,  WordTextPath])->
 -spec filter(Ref,  Text)-> FilteredText 
 when 
 	  Ref :: any(),
-	  Text :: binary(),  %% encode utf8
+	  Text :: binary() | unicode:charlist(),  %% encode utf8
     FilteredText :: binary(). %% encode utf8
 
-filter(Ref,  Text)
-  when is_binary(Text)->
+filter(Ref,  Text) ->
   WorkPid = take_worker(Ref),
   gen_server:call(WorkPid,  {filter,  Text}).
 
-test(Ref,  Text)
-  when is_binary(Text)->
+test(Ref,  Text) ->
   WorkPid = take_worker(Ref),
   gen_server:call(WorkPid,  {test,  Text}).
 
